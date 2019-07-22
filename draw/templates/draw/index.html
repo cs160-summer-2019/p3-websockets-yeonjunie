@@ -17,6 +17,7 @@
 <body>
     <!-- You may change the dimensions of this canvas -->
     <canvas id="myCanvas" width="750px" height="750px"></canvas>
+
 </body>
 <script>
 
@@ -27,9 +28,79 @@
 
     // getting the URL (you may want to use for Exercise 3)
     var url = window.location.href;
+  
+    var path ;
+    var initx;
+    var inity;
+    var randcolor = 'rgb(' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ')';
+    var id = Math.random();
 
-    // var socket = new WebSocket(
-    //     'wss://<your url here>/ws/draw');
+    tool.onMouseDown = function(event) {
+      path = new paper.Path();
+        path.strokeColor = randcolor;
+        path.add(event.point);
+
+    }
+
+    tool.onMouseDrag = function(event) {
+        path.add(event.point);
+
+    }
+    
+    tool.onMouseUp = function(event) {
+       path.add(event.point);
+      var points = [];
+       for (i=0; i< path.segments.length; i++){
+         var pt = [path.segments[i].point.x, path.segments[i].point.y];
+         points.push(pt);
+       }
+      var string = {
+          id: id,
+          points: points,
+          strokeColor: randcolor
+        }
+      socket.send(JSON.stringify(string));
+
+    }
+
+    var socket = new WebSocket(
+        'wss://p3-websockets-yeonjunie-yeonjunkim915170.codeanyapp.com/ws/draw');
+  
+    socket.onmessage = function(message) {
+      if (url == 'http://p3-websockets-yeonjunie-yeonjunkim915170.codeanyapp.com/draw/?size=large') {
+      var d = JSON.parse(message.data);
+      path = new paper.Path();
+      path.strokeColor = d.strokeColor;
+      for (i=0;i<d.points.length;i++){
+        path.add(new paper.Point(d.points[i][0], d.points[i][1]));
+      }
+      }
+      
+    };
+    
+      window.addEventListener('deviceorientation', function (event){
+        event.preventDefault();
+        var randcolor = 'rgb(' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ',' + (Math.floor(Math.random() * 256)) + ')';
+
+        if (event.gamma > 75) {
+        path.strokeColor=randcolor;
+        }         
+      }, {passive:false});
+  
+      if (window.DeviceMotionEvent) {
+        window.addEventListener('devicemotion', function (event){
+        if (Math.abs(event.acceleration.x) > 10 || Math.abs(event.acceleration.y) > 10) {
+          paper.project.clear();
+        }
+      }, {passive:false});
+      } else {
+        alert("does not support motion");
+      }
+
+  
+    socket.onclose = function(e) {
+      console.error("chat socket closed unexpectedly");
+    };
 
 
 </script>
